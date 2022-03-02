@@ -16,17 +16,17 @@ public class MusicStoreViewModel : ViewModelBase
 {
     private readonly IAlbumService _albumService;
     private readonly IActionDispatcher _dispatcher;
-    private readonly IStateStream<ApplicationState> _store;
+    private readonly IStateStream<ApplicationState> _state;
     private bool _isBusy;
     private string? _searchText;
     private AlbumViewModel? _selectedAlbum;
     private CancellationTokenSource? _cancellationTokenSource;
 
-    public MusicStoreViewModel(IAlbumService albumService, IActionDispatcher dispatcher, IStateStream<ApplicationState> store)
+    public MusicStoreViewModel(IAlbumService albumService, IActionDispatcher dispatcher, IStateStream<ApplicationState> state)
     {
         _albumService = albumService;
         _dispatcher = dispatcher;
-        _store = store;
+        _state = state;
 
         BuyMusicCommand = ReactiveCommand.Create(() =>
         {
@@ -38,28 +38,28 @@ public class MusicStoreViewModel : ViewModelBase
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(DoSearch!);
 
-            this.WhenActivated(d => d(_store
-                .Select(s => s.SearchResult)
-                .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(albums =>
+        this.WhenActivated(d => d(_state
+            .Select(s => s.SearchResult)
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Subscribe(albums =>
+            {
+                _cancellationTokenSource?.Cancel();
+                _cancellationTokenSource = new CancellationTokenSource();
+
+                SearchResults.Clear();
+
+                foreach (var album in albums)
                 {
-                    _cancellationTokenSource?.Cancel();
-                    _cancellationTokenSource = new CancellationTokenSource();
+                    var vm = new AlbumViewModel(album, _albumService);
+                    SearchResults.Add(vm);
+                }
 
-                    SearchResults.Clear();
-
-                    foreach (var album in albums)
-                    {
-                        var vm = new AlbumViewModel(album, _albumService);
-                        SearchResults.Add(vm);
-                    }
-
-                    var cancellationToken = _cancellationTokenSource.Token;
-                    if (!cancellationToken.IsCancellationRequested)
-                    {
-                        LoadCovers(cancellationToken);
-                    }
-                })));
+                var cancellationToken = _cancellationTokenSource.Token;
+                if (!cancellationToken.IsCancellationRequested)
+                {
+                    LoadCovers(cancellationToken);
+                }
+            })));
     }
 
     public ReactiveCommand<Unit, AlbumViewModel?> BuyMusicCommand { get; }

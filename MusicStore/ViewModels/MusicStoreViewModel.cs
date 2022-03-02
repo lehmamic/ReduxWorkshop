@@ -4,7 +4,10 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading;
+using MusicStore.Redux;
+using MusicStore.Redux.Actions;
 using MusicStore.Services;
+using Proxoft.Redux.Core;
 using ReactiveUI;
 
 namespace MusicStore.ViewModels;
@@ -12,14 +15,19 @@ namespace MusicStore.ViewModels;
 public class MusicStoreViewModel : ViewModelBase
 {
     private readonly IAlbumService _albumService;
+    private readonly IActionDispatcher _dispatcher;
+    private readonly IStateStream<ApplicationState> _store;
     private bool _isBusy;
     private string? _searchText;
     private AlbumViewModel? _selectedAlbum;
     private CancellationTokenSource? _cancellationTokenSource;
 
-    public MusicStoreViewModel(IAlbumService albumService)
+    public MusicStoreViewModel(IAlbumService albumService, IActionDispatcher dispatcher, IStateStream<ApplicationState> store)
     {
         _albumService = albumService;
+        _dispatcher = dispatcher;
+        _store = store;
+
         BuyMusicCommand = ReactiveCommand.Create(() =>
         {
             return SelectedAlbum;
@@ -29,6 +37,29 @@ public class MusicStoreViewModel : ViewModelBase
             .Throttle(TimeSpan.FromMilliseconds(400))
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(DoSearch!);
+
+            this.WhenActivated(d => d(_store
+                .Select(s => s.SearchResult)
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(albums =>
+                {
+                    _cancellationTokenSource?.Cancel();
+                    _cancellationTokenSource = new CancellationTokenSource();
+
+                    SearchResults.Clear();
+
+                    foreach (var album in albums)
+                    {
+                        var vm = new AlbumViewModel(album, _albumService);
+                        SearchResults.Add(vm);
+                    }
+
+                    var cancellationToken = _cancellationTokenSource.Token;
+                    if (!cancellationToken.IsCancellationRequested)
+                    {
+                        LoadCovers(cancellationToken);
+                    }
+                })));
     }
 
     public ReactiveCommand<Unit, AlbumViewModel?> BuyMusicCommand { get; }
@@ -56,26 +87,11 @@ public class MusicStoreViewModel : ViewModelBase
     private async void DoSearch(string s)
     {
         IsBusy = true;
-        SearchResults.Clear();
-
-        _cancellationTokenSource?.Cancel();
-        _cancellationTokenSource = new CancellationTokenSource();
-        var cancellationToken = _cancellationTokenSource.Token;
 
         if (!string.IsNullOrWhiteSpace(s))
         {
             var albums = await _albumService.SearchAsync(s);
-
-            foreach (var album in albums)
-            {
-                var vm = new AlbumViewModel(album, _albumService);
-                SearchResults.Add(vm);
-            }
-
-            if (!cancellationToken.IsCancellationRequested)
-            {
-                LoadCovers(cancellationToken);
-            }
+            _dispatcher.Dispatch(new SetSearchResultsAction(albums.ToArray()));
         }
 
         IsBusy = false;

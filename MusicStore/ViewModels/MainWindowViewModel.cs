@@ -4,7 +4,9 @@ using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Windows.Input;
+using MusicStore.Redux;
 using MusicStore.Services;
+using Proxoft.Redux.Core;
 using ReactiveUI;
 
 namespace MusicStore.ViewModels
@@ -12,17 +14,21 @@ namespace MusicStore.ViewModels
     public class MainWindowViewModel : ViewModelBase
     {
         private readonly IAlbumService _albumService;
+        private readonly IActionDispatcher _dispatcher;
+        private readonly IStateStream<ApplicationState> _state;
         private bool _collectionEmpty;
 
-        public MainWindowViewModel(IAlbumService albumService)
+        public MainWindowViewModel(IAlbumService albumService, IActionDispatcher dispatcher, IStateStream<ApplicationState> state)
         {
             _albumService = albumService;
+            _dispatcher = dispatcher;
+            _state = state;
 
             ShowDialog = new Interaction<MusicStoreViewModel, AlbumViewModel?>();
 
             BuyMusicCommand = ReactiveCommand.CreateFromTask(async () =>
             {
-                var store = new MusicStoreViewModel(albumService);
+                var store = new MusicStoreViewModel(albumService, dispatcher, state);
 
                 var result = await ShowDialog.Handle(store);
                 if (result != null)

@@ -44,15 +44,15 @@ namespace MusicStore.ViewModels
                 .Subscribe(x => CollectionEmpty = x == 0);
 
             this.WhenActivated(d => d(_state
-                .SelectMany(s => s.Library)
-                .Select(album =>  new AlbumViewModel(album, _albumService))
-                .Subscribe(album =>
+                .Select(s => s.Library)
+                .Subscribe(albums =>
                 {
-                    if (!Albums.Any(vm => string.Equals(vm.Title, album.Title, StringComparison.OrdinalIgnoreCase)))
+                    foreach (var album in albums.Where(a => !Albums.Any(vm => string.Equals(vm.Title, a.Title, StringComparison.OrdinalIgnoreCase))))
                     {
-                        Albums.Add(album);
+                        var vm = new AlbumViewModel(album, _albumService);
+                        Albums.Add(vm);
 
-                        _ = album.LoadCover();
+                        _ = vm.LoadCover();
                     }
                 })));
 

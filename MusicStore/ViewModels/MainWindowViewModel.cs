@@ -4,22 +4,25 @@ using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Windows.Input;
-using MusicStore.Models;
+using MusicStore.Services;
 using ReactiveUI;
 
 namespace MusicStore.ViewModels
 {
     public class MainWindowViewModel : ViewModelBase
     {
+        private readonly IAlbumService _albumService;
         private bool _collectionEmpty;
 
-        public MainWindowViewModel()
+        public MainWindowViewModel(IAlbumService albumService)
         {
+            _albumService = albumService;
+
             ShowDialog = new Interaction<MusicStoreViewModel, AlbumViewModel?>();
 
             BuyMusicCommand = ReactiveCommand.CreateFromTask(async () =>
             {
-                var store = new MusicStoreViewModel();
+                var store = new MusicStoreViewModel(albumService);
 
                 var result = await ShowDialog.Handle(store);
                 if (result != null)
@@ -50,7 +53,7 @@ namespace MusicStore.ViewModels
 
         private async void LoadAlbums()
         {
-            var albums = (await Album.LoadCachedAsync()).Select(x => new AlbumViewModel(x));
+            var albums = (await _albumService.LoadCachedAsync()).Select(x => new AlbumViewModel(x, _albumService));
 
             foreach (var album in albums)
             {

@@ -4,20 +4,22 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading;
-using MusicStore.Models;
+using MusicStore.Services;
 using ReactiveUI;
 
 namespace MusicStore.ViewModels;
 
 public class MusicStoreViewModel : ViewModelBase
 {
+    private readonly IAlbumService _albumService;
     private bool _isBusy;
     private string? _searchText;
     private AlbumViewModel? _selectedAlbum;
     private CancellationTokenSource? _cancellationTokenSource;
 
-    public MusicStoreViewModel()
+    public MusicStoreViewModel(IAlbumService albumService)
     {
+        _albumService = albumService;
         BuyMusicCommand = ReactiveCommand.Create(() =>
         {
             return SelectedAlbum;
@@ -62,12 +64,11 @@ public class MusicStoreViewModel : ViewModelBase
 
         if (!string.IsNullOrWhiteSpace(s))
         {
-            var albums = await Album.SearchAsync(s);
+            var albums = await _albumService.SearchAsync(s);
 
             foreach (var album in albums)
             {
-                var vm = new AlbumViewModel(album);
-
+                var vm = new AlbumViewModel(album, _albumService);
                 SearchResults.Add(vm);
             }
 

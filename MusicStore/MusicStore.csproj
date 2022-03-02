@@ -26,6 +26,9 @@
         <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="0.10.12" />
         <PackageReference Include="Avalonia.ReactiveUI" Version="0.10.12" />
         <PackageReference Include="iTunesSearch" Version="1.0.44" />
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />
+        <PackageReference Include="Proxoft.Redux.Core" Version="3.1.1" />
+        <PackageReference Include="Proxoft.Redux.Hosting" Version="3.1.1" />
         <PackageReference Include="XamlNameReferenceGenerator" Version="1.3.4" />
     </ItemGroup>
     <ItemGroup>

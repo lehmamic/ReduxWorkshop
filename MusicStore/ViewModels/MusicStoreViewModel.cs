@@ -16,17 +16,17 @@ public class MusicStoreViewModel : ViewModelBase
 {
     private readonly IAlbumService _albumService;
     private readonly IActionDispatcher _dispatcher;
-    private readonly IStateStream<ApplicationState> _store;
+    private readonly IStateStream<ApplicationState> _state;
     private bool _isBusy;
     private string? _searchText;
     private AlbumViewModel? _selectedAlbum;
     private CancellationTokenSource? _cancellationTokenSource;
 
-    public MusicStoreViewModel(IAlbumService albumService, IActionDispatcher dispatcher, IStateStream<ApplicationState> store)
+    public MusicStoreViewModel(IAlbumService albumService, IActionDispatcher dispatcher, IStateStream<ApplicationState> state)
     {
         _albumService = albumService;
         _dispatcher = dispatcher;
-        _store = store;
+        _state = state;
 
         BuyMusicCommand = ReactiveCommand.Create(() =>
         {
@@ -38,7 +38,7 @@ public class MusicStoreViewModel : ViewModelBase
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(DoSearch!);
 
-        this.WhenActivated(d => d(_store
+        this.WhenActivated(d => d(_state
             .Select(s => s.SearchResult)
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(albums =>

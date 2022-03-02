@@ -22,6 +22,8 @@ public class AlbumViewModel : ViewModelBase
 
     public string Title => _album.Title;
 
+    public Album Album => _album;
+
     public Bitmap? Cover
     {
         get => _cover;

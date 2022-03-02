@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Windows.Input;
 using MusicStore.Redux;
+using MusicStore.Redux.Actions;
 using MusicStore.Services;
 using Proxoft.Redux.Core;
 using ReactiveUI;
@@ -33,14 +35,26 @@ namespace MusicStore.ViewModels
                 var result = await ShowDialog.Handle(store);
                 if (result != null)
                 {
-                    Albums.Add(result);
-
+                    _dispatcher.Dispatch(new AddAlbumsToLibraryAction(new []{ result.Album }));
                     await result.SaveToDiskAsync();
                 }
             });
 
             this.WhenAnyValue(x => x.Albums.Count)
                 .Subscribe(x => CollectionEmpty = x == 0);
+
+            this.WhenActivated(d => d(_state
+                .SelectMany(s => s.Library)
+                .Select(album =>  new AlbumViewModel(album, _albumService))
+                .Subscribe(album =>
+                {
+                    if (!Albums.Any(vm => string.Equals(vm.Title, album.Title, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        Albums.Add(album);
+
+                        _ = album.LoadCover();
+                    }
+                })));
 
             RxApp.MainThreadScheduler.Schedule(LoadAlbums);
         }
@@ -59,18 +73,8 @@ namespace MusicStore.ViewModels
 
         private async void LoadAlbums()
         {
-            var albums = (await _albumService.LoadCachedAsync()).Select(x => new AlbumViewModel(x, _albumService));
-
-            foreach (var album in albums)
-            {
-                Albums.Add(album);
-            }
-
-            foreach (var album in Albums.ToList())
-            {
-                await album.LoadCover();
-            }
+            var albums = await _albumService.LoadCachedAsync();
+            _dispatcher.Dispatch(new AddAlbumsToLibraryAction(albums.ToArray()));
         }
-
     }
 }

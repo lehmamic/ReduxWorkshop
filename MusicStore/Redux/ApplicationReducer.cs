@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Linq;
 using MusicStore.Redux.Actions;
 using Proxoft.Redux.Core;
 
@@ -11,6 +12,7 @@ public class ApplicationReducer : IReducer<ApplicationState>
         return action switch
         {
             SetSearchResultsAction a => state with { SearchResult = a.SearchResults.ToImmutableArray() },
+            AddAlbumsToLibraryAction a => state with { Library = state.Library.Concat(a.Albums).ToImmutableArray() },
             _ => state
         };
     }

@@ -5,9 +5,11 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
+using MusicStore.Redux;
 using MusicStore.Services;
 using MusicStore.ViewModels;
 using MusicStore.Views;
+using Proxoft.Redux.Core;
 using Proxoft.Redux.Core.Dispatchers;
 
 namespace MusicStore
@@ -31,6 +33,9 @@ namespace MusicStore
 
         public override void OnFrameworkInitializationCompleted()
         {
+            var store = Container.GetRequiredService<Store<ApplicationState>>();
+            store.Initialize(() => new ApplicationState());
+
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
                 desktop.MainWindow = new MainWindow

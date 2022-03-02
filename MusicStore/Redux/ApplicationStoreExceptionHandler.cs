@@ -1,7 +1,7 @@
 using System;
 using Proxoft.Redux.Core.ExceptionHandling;
 
-namespace MusicStore;
+namespace MusicStore.Redux;
 
 public class ApplicationStoreExceptionHandler : IExceptionHandler
 {

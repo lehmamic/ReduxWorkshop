@@ -1,6 +1,6 @@
 using Proxoft.Redux.Core;
 
-namespace MusicStore;
+namespace MusicStore.Redux;
 
 public class ApplicationReducer : IReducer<ApplicationState>
 {

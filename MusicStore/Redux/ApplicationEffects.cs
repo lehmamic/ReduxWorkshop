@@ -4,7 +4,7 @@ using System.Reactive.Linq;
 using Proxoft.Redux.Core;
 using Proxoft.Redux.Core.Actions;
 
-namespace MusicStore;
+namespace MusicStore.Redux;
 
 public class ApplicationEffects : Effect<ApplicationState>
 {

@@ -1,3 +1,3 @@
-namespace MusicStore;
+namespace MusicStore.Redux;
 
 public record ApplicationState();

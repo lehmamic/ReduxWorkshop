@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Reactive.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using iTunesSearch.Library;
@@ -73,12 +75,15 @@ public class AlbumService : IAlbumService
         return results;
     }
 
-    public async Task<IEnumerable<Album>> SearchAsync(string searchTerm)
+    public IObservable<IEnumerable<Album>> SearchAsync(string? searchTerm)
     {
-        var query = await _searchManager.GetAlbumsAsync(searchTerm).ConfigureAwait(false);
+        return Observable.FromAsync(async () =>
+        {
+            var query = await _searchManager.GetAlbumsAsync(searchTerm).ConfigureAwait(false);
 
-        return query.Albums.Select(x =>
-            new Album(x.ArtistName, x.CollectionName, x.ArtworkUrl100.Replace("100x100bb", "600x600bb")));
+            return query.Albums.Select(x =>
+                new Album(x.ArtistName, x.CollectionName, x.ArtworkUrl100.Replace("100x100bb", "600x600bb")));
+        });
     }
 
     private string GetCachePath(Album album) => $"{CacheRoot}/{album.Artist} - {album.Title}";

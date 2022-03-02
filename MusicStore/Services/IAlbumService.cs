@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -17,5 +18,5 @@ public interface IAlbumService
 
     Task<IEnumerable<Album>> LoadCachedAsync();
 
-    Task<IEnumerable<Album>> SearchAsync(string searchTerm);
+    IObservable<IEnumerable<Album>> SearchAsync(string? searchTerm);
 }

@@ -16,17 +16,17 @@ public class MusicStoreViewModel : ViewModelBase
 {
     private readonly IAlbumService _albumService;
     private readonly IActionDispatcher _dispatcher;
-    private readonly IStateStream<ApplicationState> _store;
+    private readonly IStateStream<ApplicationState> _state;
     private bool _isBusy;
     private string? _searchText;
     private AlbumViewModel? _selectedAlbum;
     private CancellationTokenSource? _cancellationTokenSource;
 
-    public MusicStoreViewModel(IAlbumService albumService, IActionDispatcher dispatcher, IStateStream<ApplicationState> store)
+    public MusicStoreViewModel(IAlbumService albumService, IActionDispatcher dispatcher, IStateStream<ApplicationState> state)
     {
         _albumService = albumService;
         _dispatcher = dispatcher;
-        _store = store;
+        _state = state;
 
         BuyMusicCommand = ReactiveCommand.Create(() =>
         {
@@ -34,11 +34,15 @@ public class MusicStoreViewModel : ViewModelBase
         });
 
         this.WhenAnyValue(x => x.SearchText)
-            .Throttle(TimeSpan.FromMilliseconds(400))
-            .ObserveOn(RxApp.MainThreadScheduler)
-            .Subscribe(DoSearch!);
+            .Select(term => new SearchAlbumsAction(term))
+            .Subscribe(_dispatcher.Dispatch);
 
-        this.WhenActivated(d => d(_store
+        this.WhenActivated(d => d(_state
+            .Select(s => s.IsBusy)
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Subscribe(isBusy => IsBusy = isBusy)));
+
+        this.WhenActivated(d => d(_state
             .Select(s => s.SearchResult)
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(albums =>
@@ -82,19 +86,6 @@ public class MusicStoreViewModel : ViewModelBase
     {
         get => _selectedAlbum;
         set => this.RaiseAndSetIfChanged(ref _selectedAlbum, value);
-    }
-
-    private async void DoSearch(string s)
-    {
-        IsBusy = true;
-
-        if (!string.IsNullOrWhiteSpace(s))
-        {
-            var albums = await _albumService.SearchAsync(s);
-            _dispatcher.Dispatch(new SetSearchResultsAction(albums.ToArray()));
-        }
-
-        IsBusy = false;
     }
 
     private async void LoadCovers(CancellationToken cancellationToken)

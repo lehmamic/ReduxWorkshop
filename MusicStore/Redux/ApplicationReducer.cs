@@ -13,6 +13,7 @@ public class ApplicationReducer : IReducer<ApplicationState>
         {
             SetSearchResultsAction a => state with { SearchResult = a.SearchResults.ToImmutableArray() },
             AddAlbumsToLibraryAction a => state with { Library = state.Library.Concat(a.Albums).ToImmutableArray() },
+            SetBusyAction a => state with { IsBusy = a.IsBusy },
             _ => state
         };
     }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Reactive.Linq;
 using MarbleTest.Net;
@@ -7,6 +8,7 @@ using MusicStore.Models;
 using MusicStore.Redux;
 using MusicStore.Redux.Actions;
 using MusicStore.Services;
+using MusicStore.Utils;
 using Proxoft.Redux.Core;
 using Xunit;
 
@@ -24,7 +26,13 @@ public class ApplicationEffectsTest
         var state = new ApplicationState();
         var action = new SearchAlbumsAction("any term");
 
-        var effect = _mocker.CreateInstance<ApplicationEffects>();
+        _mocker.GetMock<ISchedulerProvider>()
+            .Setup(s => s.CreateTime(It.IsAny<TimeSpan>()))
+            .Returns(() => _scheduler.CreateTime("---|"));
+
+        _mocker.GetMock<ISchedulerProvider>()
+            .SetupGet(s => s.Scheduler)
+            .Returns(() => _scheduler);
 
         _mocker.GetMock<IAlbumService>()
             .Setup(s => s.SearchAsync(It.IsAny<string>()))
@@ -32,6 +40,8 @@ public class ApplicationEffectsTest
             {
                 return Observable.Return<IEnumerable<Album>>(new[] { new Album("Muse", "Absolution", "http://localhost/absolution") });
             });
+
+        var effect = _mocker.CreateInstance<ApplicationEffects>();
 
         // when
         var sourceEvents = _scheduler.CreateColdObservable<StateActionPair<ApplicationState>>(
@@ -45,7 +55,7 @@ public class ApplicationEffectsTest
         // then
         _scheduler.ExpectObservable(effect.SearchAlbums)
             .ToBe(
-                "--(abc)-",
+                "-----(abc)-", // the actions are expected 3 time blocks later (see throtteling with the test scheduler)
                 new
                 {
                     a = new SetBusyAction(true),

@@ -7,6 +7,7 @@ using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using MusicStore.Redux;
 using MusicStore.Services;
+using MusicStore.Utils;
 using MusicStore.ViewModels;
 using MusicStore.Views;
 using Proxoft.Redux.Core;
@@ -52,6 +53,7 @@ namespace MusicStore
             services.AddSingleton<IAlbumService, AlbumService>();
             services.AddSingleton<MainWindowViewModel>();
 
+            services.AddSingleton<ISchedulerProvider, SchedulerProvider>();
             services.AddRedux<ApplicationState>(builder =>
             {
                 builder.UseReducer<ApplicationReducer>()

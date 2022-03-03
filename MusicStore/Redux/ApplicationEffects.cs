@@ -4,25 +4,26 @@ using System.Linq;
 using System.Reactive.Linq;
 using MusicStore.Redux.Actions;
 using MusicStore.Services;
+using MusicStore.Utils;
 using Proxoft.Redux.Core;
-using Proxoft.Redux.Core.Actions;
-using Proxoft.Redux.Core.Extensions;
 
 namespace MusicStore.Redux;
 
 public class ApplicationEffects : Effect<ApplicationState>
 {
+    private readonly ISchedulerProvider _schedulerProvider;
     private readonly IAlbumService _albumService;
 
-    public ApplicationEffects(IAlbumService albumService)
+    public ApplicationEffects(ISchedulerProvider schedulerProvider, IAlbumService albumService)
     {
+        _schedulerProvider = schedulerProvider;
         _albumService = albumService;
     }
 
-    private IDisposable SearchAlbums => ActionStream
+    public IObservable<IAction> SearchAlbums => ActionStream
         .OfType<SearchAlbumsAction>()
-        .Throttle(TimeSpan.FromMilliseconds(400))
-        .Select(a => Observable.FromAsync(() => _albumService.SearchAsync(a.Term))
+        .Throttle(_schedulerProvider.CreateTime(TimeSpan.FromMilliseconds(400)), _schedulerProvider.Scheduler)
+        .Select(a => _albumService.SearchAsync(a.Term)
             .SelectMany(searchResults => new IAction[]
             {
                 new SetBusyAction(false),
@@ -30,11 +31,11 @@ public class ApplicationEffects : Effect<ApplicationState>
             })
             .StartWith(new SetBusyAction(true))
         )
-        .Switch()
-        .Subscribe(Dispatch);
+        .Switch();
 
     protected override IEnumerable<IDisposable> OnConnect()
     {
-        yield return SearchAlbums;
+        yield return SearchAlbums
+            .Subscribe(Dispatch);
     }
 }
